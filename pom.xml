@@ -37,6 +37,11 @@
             <artifactId>telegrambots</artifactId>
             <version>6.8.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>

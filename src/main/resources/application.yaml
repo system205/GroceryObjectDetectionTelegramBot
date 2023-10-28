@@ -1,2 +1,8 @@
 bot:
   token: ${BOT_TOKEN}
+
+infer:
+  request:
+    model-id: grocery-products-detection/4
+    model-type: object-detection
+    api-key: ${API_KEY}
