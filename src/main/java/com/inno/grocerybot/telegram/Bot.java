@@ -23,13 +23,13 @@ import java.util.stream.*;
 @Component
 @Slf4j
 public class Bot extends TelegramLongPollingBot {
-    @Autowired
-    private Environment env;
+    private final Environment env;
     private final WebClient webClient;
 
-    public Bot(@Value("${bot.token}") String botToken, WebClient webClient) {
+    public Bot(@Value("${bot.token}") String botToken, WebClient webClient, Environment env) {
         super(botToken);
         this.webClient = webClient;
+        this.env = env;
     }
 
     @Override
