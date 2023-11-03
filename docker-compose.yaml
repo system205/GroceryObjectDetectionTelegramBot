@@ -1,0 +1,14 @@
+services:
+  roboflow-inference:
+    image: roboflow/roboflow-inference-server-gpu:latest
+    ports:
+      - "9001:9001"
+    volumes:
+      - /d/YOLO_cache:/cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
