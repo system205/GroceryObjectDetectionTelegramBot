@@ -32,8 +32,23 @@ public class Bot extends TelegramLongPollingBot {
         this.env = env;
     }
 
+    private static PhotoSize getPhoto(Update update) {
+        if (update.hasMessage() && update.getMessage().hasPhoto()) {
+            List<PhotoSize> photos = update.getMessage().getPhoto();
+
+            // Fetch the bigger photo
+            return Objects.requireNonNull(photos.stream()
+                    .max(Comparator.comparing(PhotoSize::getFileSize)).orElse(null),
+                "Photo can not be null");
+        }
+
+        // Not found
+        return null;
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
+        final long startTime = System.currentTimeMillis();
         final String base64Photo = getBase64Photo(update);
 
         if (base64Photo == null) {
@@ -42,10 +57,14 @@ public class Bot extends TelegramLongPollingBot {
 
         String text;
         try {
-            final Set<String> classes = getClasses(base64Photo);
+            final InferResponse response = getClasses(base64Photo);
+            final Set<String> classes = response.getClasses();
             log.info("Classes: {}", classes);
             final String classesAsString = classes.stream().reduce((s, s2) -> s + ", " + s2).orElse("");
             text = classesAsString.isBlank() ? "I didn't recognize anything(" : "Recognized classes: " + classesAsString;
+            final long endTime = System.currentTimeMillis();
+            text += String.format("%nInference time: %dms %nWhole process took: %dms",
+                (long) Math.ceil(response.getTime()), endTime - startTime);
         } catch (WebClientRequestException e) {
             log.info("Error with WebClient", e);
             text = "Sorry. The server is down. Contact admins";
@@ -55,7 +74,7 @@ public class Bot extends TelegramLongPollingBot {
 
     }
 
-    private Set<String> getClasses(String base64Photo) {
+    private InferResponse getClasses(String base64Photo) {
         final InferRequest request = new InferRequest("base64", base64Photo, env);
 
         Mono<List<InferResponse>> inferResponseMono = webClient
@@ -63,18 +82,20 @@ public class Bot extends TelegramLongPollingBot {
             .uri("infer/object_detection")
             .body(Mono.just(request), InferRequest.class)
             .retrieve()
-            .bodyToMono(new ParameterizedTypeReference<>() {});
+            .bodyToMono(new ParameterizedTypeReference<>() {
+            });
 
         InferResponse response = Objects.requireNonNull(inferResponseMono.block()).get(0);
-        log.info("Found {} predictions in response", response.getPredictions().size());
+        log.info("Found {} predictions in response. Took {} ms", response.getPredictions().size(), response.getTime());
+        response.setClasses(response.getPredictions().stream().map(Prediction::getClassName).collect(Collectors.toSet()));
 
-        return response.getPredictions().stream().map(Prediction::getClassName) .collect(Collectors.toSet());
+        return response;
     }
 
     private String getBase64Photo(Update update) {
         final PhotoSize photo = getPhoto(update);
 
-        if (photo != null){
+        if (photo != null) {
             GetFile getFileMethod = new GetFile();
             getFileMethod.setFileId(photo.getFileId());
 
@@ -102,21 +123,7 @@ public class Bot extends TelegramLongPollingBot {
         return null;
     }
 
-    private static PhotoSize getPhoto(Update update) {
-        if (update.hasMessage() && update.getMessage().hasPhoto()) {
-            List<PhotoSize> photos = update.getMessage().getPhoto();
-
-            // Fetch the bigger photo
-            return Objects.requireNonNull(photos.stream()
-                .max(Comparator.comparing(PhotoSize::getFileSize)).orElse(null),
-                "Photo can not be null");
-        }
-
-        // Not found
-        return null;
-    }
-
-    private void sendMessage(Long chatId, String text){
+    private void sendMessage(Long chatId, String text) {
         final SendMessage message = new SendMessage(String.valueOf(chatId), text);
         try {
             execute(message);

@@ -8,4 +8,5 @@ import java.util.*;
 public class InferResponse {
     private double time;
     private List<Prediction> predictions;
+    private Set<String> classes;
 }
