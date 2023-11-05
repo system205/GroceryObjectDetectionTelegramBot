@@ -135,6 +135,6 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return "GroceryBOt";
+        return "GroceryBot";
     }
 }
