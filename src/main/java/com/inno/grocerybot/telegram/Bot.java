@@ -12,6 +12,7 @@ import org.telegram.telegrambots.meta.api.methods.*;
 import org.telegram.telegrambots.meta.api.methods.send.*;
 import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.api.objects.*;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ForceReplyKeyboard;
 import org.telegram.telegrambots.meta.exceptions.*;
 import reactor.core.publisher.*;
 
@@ -25,11 +26,13 @@ import java.util.stream.*;
 public class Bot extends TelegramLongPollingBot {
     private final Environment env;
     private final WebClient webClient;
+    private final Long ownerId;
 
-    public Bot(@Value("${bot.token}") String botToken, WebClient webClient, Environment env) {
+    public Bot(@Value("${bot.token}") String botToken, @Value("${bot.owner-id}") Long ownerId, WebClient webClient, Environment env) {
         super(botToken);
         this.webClient = webClient;
         this.env = env;
+        this.ownerId = ownerId;
     }
 
     private static PhotoSize getPhoto(Update update) {
@@ -48,14 +51,26 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        if (update.hasMessage() && update.getMessage().hasText() &&
-            update.getMessage().getText().equals("/start")) {
-            final String text = "Hi, %s! Send me a photo of your shopping cart and I'll tell you what is inside 😺"
-                .formatted(update.getMessage().getFrom().getFirstName());
-            sendMessage(update.getMessage().getChatId(), text);
-
+        if (update.hasMessage() && update.getMessage().hasText()) {
             User user = update.getMessage().getFrom();
-            log.info("User {}:{}[{} {}] sent /start", user.getUserName(), user.getId(), user.getFirstName(), user.getLastName());
+            final String messageText = update.getMessage().getText();
+
+            if (messageText.equals("/start")) {
+                final String text = ("""
+                    Hi, %s!
+                    Send me a photo of your shopping cart and I'll tell you what is inside 😺.
+                    "You can provide feedback replying to /feedback 💌""")
+                    .formatted(update.getMessage().getFrom().getFirstName());
+                sendMessage(user.getId(), text);
+
+                log.info("User {}:{}[{} {}] sent /start", user.getUserName(), user.getId(), user.getFirstName(), user.getLastName());
+            } else if (messageText.equals("/feedback")) {
+                sendMessage(user.getId(), "Reply to this message with your feedback 🙏", true);
+            } else if (update.getMessage().isReply() && update.getMessage().getReplyToMessage().getText().startsWith("Reply")) {
+                sendMessage(ownerId, "User %s sent feedback%n%s".formatted(user.getUserName(), messageText));
+                sendMessage(user.getId(), "Your feedback is sent. Thanks! 🤞");
+                log.info("User {}:{}[{} {}] sent feedback", user.getUserName(), user.getId(), user.getFirstName(), user.getLastName());
+            }
         }
 
         final long startTime = System.currentTimeMillis();
@@ -82,6 +97,17 @@ public class Bot extends TelegramLongPollingBot {
 
         sendMessage(update.getMessage().getChatId(), text);
 
+    }
+
+    private void sendMessage(Long chatId, String text, boolean forceReply) {
+        final SendMessage message = new SendMessage(String.valueOf(chatId), text);
+        if (forceReply) message.setReplyMarkup(new ForceReplyKeyboard());
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            log.error("Error when sending message", e);
+            throw new IllegalStateException(e);
+        }
     }
 
     private InferResponse getClasses(String base64Photo) {
@@ -134,13 +160,7 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     private void sendMessage(Long chatId, String text) {
-        final SendMessage message = new SendMessage(String.valueOf(chatId), text);
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            log.error("Error when sending message", e);
-            throw new IllegalStateException(e);
-        }
+        sendMessage(chatId, text, false);
     }
 
     @Override

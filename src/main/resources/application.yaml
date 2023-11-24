@@ -1,5 +1,6 @@
 bot:
   token: ${BOT_TOKEN}
+  owner-id: ${OWNER_ID}
 
 infer:
   request:
