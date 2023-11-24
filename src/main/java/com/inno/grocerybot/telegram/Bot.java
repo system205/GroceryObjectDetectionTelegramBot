@@ -48,6 +48,16 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+        if (update.hasMessage() && update.getMessage().hasText() &&
+            update.getMessage().getText().equals("/start")) {
+            final String text = "Hi, %s! Send me a photo of your shopping cart and I'll tell you what is inside 😺"
+                .formatted(update.getMessage().getFrom().getFirstName());
+            sendMessage(update.getMessage().getChatId(), text);
+
+            User user = update.getMessage().getFrom();
+            log.info("User {}:{}[{} {}] sent /start", user.getUserName(), user.getId(), user.getFirstName(), user.getLastName());
+        }
+
         final long startTime = System.currentTimeMillis();
         final String base64Photo = getBase64Photo(update);
 
