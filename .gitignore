@@ -4,6 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .env
+tokens.txt
 
 ### STS ###
 .apt_generated

@@ -1,8 +1,6 @@
 services:
   roboflow-inference:
     image: roboflow/roboflow-inference-server-gpu:latest
-    ports:
-      - "9001:9001"
     volumes:
       - /d/YOLO_cache:/cache
     deploy:
@@ -12,3 +10,10 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+
+  telegram-bot:
+    image: system205/grocery-bot:latest
+    environment:
+      web-client.base-url: http://roboflow-inference:9001/
+    env_file:
+      - ./tokens.txt
