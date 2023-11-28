@@ -8,7 +8,8 @@ Here you can find the source code of the telegram bot that interacts with the in
 You can do it with: ```docker-compose.yaml```
 3. Set up environment variables for Java:
    1. API_KEY: Roboflow private key from ```app.roboflow.com/<your_name>/settings/api```
-   2. BOT_TOKEN: Telegram bot API token retrieved from [BotFather](https://t.me/BotFather)  
+   2. BOT_TOKEN: Telegram bot API token retrieved from [BotFather](https://t.me/BotFather)
+   3. OWNER_ID: Your telegram id or anyone who will receive feedback and other admin information from users
 
 # How to
 

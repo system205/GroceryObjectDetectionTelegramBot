@@ -59,7 +59,7 @@ public class Bot extends TelegramLongPollingBot {
                 final String text = ("""
                     Hi, %s!
                     Send me a photo of your shopping cart and I'll tell you what is inside 😺.
-                    "You can provide feedback replying to /feedback 💌""")
+                    You can provide feedback replying to /feedback 💌""")
                     .formatted(update.getMessage().getFrom().getFirstName());
                 sendMessage(user.getId(), text);
 
